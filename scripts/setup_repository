@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+sfg_bash_utils__setup_repository() {
+    local environment_file="${1}"
+    local local_workspace_directory="${2}"
+    local container_workspace_directory="${3}"
+
+    local SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)
+    source "${SCRIPT_DIR}/common"
+
+    local START_TEXT="> Setting up repository inside container."
+    local END_TEXT="< Done setting up repository inside container."
+
+    sfg_bash_utils__print_info "${START_TEXT}"
+    sfg_bash_utils__set_environment_variable "${environment_file}" "CONTAINER_REPOSITORY_MOUNT_POINT" "${container_workspace_directory}/$(basename "${local_workspace_directory}")"
+    sfg_bash_utils__print_info "${END_TEXT}"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    sfg_bash_utils__setup_repository "${@}"
+fi
