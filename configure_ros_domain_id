@@ -19,7 +19,7 @@ sfg_bash_utils__configure_ros_domain_id() {
 
         if [[ ! "${confirm}" == y ]]; then
             sfg_bash_utils__print_info "${END_TEXT}"
-            return
+            return 0
         fi
     fi
 

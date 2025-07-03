@@ -6,14 +6,14 @@ sfg_bash_utils__get_line_number_of_environment_variable() {
 
     if [ ! -f "${environment_file}" ]; then
         echo -1
-        return
+        return 0
     fi
 
     local line_number=$(grep -n "^${environment_variable}=" "${environment_file}" | cut -d: -f1)
 
     if [ -z "${line_number}" ]; then
         echo -1
-        return
+        return 0
     fi
 
     echo ${line_number}
@@ -37,8 +37,8 @@ sfg_bash_utils__get_environment_variable() {
     local environment_variable=${2}
 
     if [ ! -f "${environment_file}" ]; then
-        echo
-        return
+        echo ""
+        return 1
     fi
 
     echo $(grep -m1 "^${environment_variable}=.*" "${environment_file}" | cut -d= -f2)
