@@ -1,23 +1,31 @@
 #!/usr/bin/env bash
+
 sfg_bash_utils__print_color() {
+    local color_code="${1}"
+    local message="${2}"
+
     tput bold >&2
-    tput setaf ${1} >&2
-    sfg_bash_utils__print_plain "${2}"
+    tput setaf "${color_code}" >&2
+    sfg_bash_utils__print_plain "${message}"
     tput sgr0 >&2
 }
 
 sfg_bash_utils__print_error() {
-    sfg_bash_utils__print_color 1 "${1}"
+    local message="${1}"
+    sfg_bash_utils__print_color 1 "${message}"
 }
 
 sfg_bash_utils__print_warning() {
-    sfg_bash_utils__print_color 3 "${1}"
+    local message="${1}"
+    sfg_bash_utils__print_color 3 "${message}"
 }
 
 sfg_bash_utils__print_info() {
-    sfg_bash_utils__print_color 2 "${1}"
+    local message="${1}"
+    sfg_bash_utils__print_color 2 "${message}"
 }
 
 sfg_bash_utils__print_plain() {
-    echo "${1}" >&2
+    local message="${1}"
+    echo "${message}" >&2
 }
