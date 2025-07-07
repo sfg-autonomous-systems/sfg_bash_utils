@@ -4,7 +4,6 @@ sfg_bash_utils__print_color() {
     local color_code="${1}"
     local message="${2}"
 
-<<<<<<< HEAD
     if [[ -v TERM ]]; then
         tput bold >&2
         tput setaf "${color_code}" >&2
@@ -13,12 +12,6 @@ sfg_bash_utils__print_color() {
     else
         sfg_bash_utils__print_plain "${message}"
     fi
-=======
-    tput bold >&2
-    tput setaf "${color_code}" >&2
-    sfg_bash_utils__print_plain "${message}"
-    tput sgr0 >&2
->>>>>>> f003ee3c82c744425757190d5d12a43abbd9fabd
 }
 
 sfg_bash_utils__print_error() {
