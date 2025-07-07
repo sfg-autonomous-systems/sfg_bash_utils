@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+
 sfg_bash_utils__print_color() {
     local color_code="${1}"
     local message="${2}"
 
+<<<<<<< HEAD
     if [[ -v TERM ]]; then
         tput bold >&2
         tput setaf "${color_code}" >&2
@@ -11,20 +13,30 @@ sfg_bash_utils__print_color() {
     else
         sfg_bash_utils__print_plain "${message}"
     fi
+=======
+    tput bold >&2
+    tput setaf "${color_code}" >&2
+    sfg_bash_utils__print_plain "${message}"
+    tput sgr0 >&2
+>>>>>>> f003ee3c82c744425757190d5d12a43abbd9fabd
 }
 
 sfg_bash_utils__print_error() {
-    sfg_bash_utils__print_color 1 "${1}"
+    local message="${1}"
+    sfg_bash_utils__print_color 1 "${message}"
 }
 
 sfg_bash_utils__print_warning() {
-    sfg_bash_utils__print_color 3 "${1}"
+    local message="${1}"
+    sfg_bash_utils__print_color 3 "${message}"
 }
 
 sfg_bash_utils__print_info() {
-    sfg_bash_utils__print_color 2 "${1}"
+    local message="${1}"
+    sfg_bash_utils__print_color 2 "${message}"
 }
 
 sfg_bash_utils__print_plain() {
-    echo "${1}" >&2
+    local message="${1}"
+    echo "${message}" >&2
 }
