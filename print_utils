@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 sfg_bash_utils__print_color() {
-    tput bold >&2
-    tput setaf ${1} >&2
-    sfg_bash_utils__print_plain "${2}"
-    tput sgr0 >&2
+    local color_code="${1}"
+    local message="${2}"
+
+    if [[ -v TERM ]]; then
+        tput bold >&2
+        tput setaf "${color_code}" >&2
+        sfg_bash_utils__print_plain "${message}"
+        tput sgr0 >&2
+    else
+        sfg_bash_utils__print_plain "${message}"
+    fi
 }
 
 sfg_bash_utils__print_error() {
