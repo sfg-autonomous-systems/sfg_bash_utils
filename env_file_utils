@@ -9,21 +9,23 @@ sfg_bash_utils__get_line_number_of_environment_variable() {
         return 0
     fi
 
-    local line_number=$(grep -n "^${environment_variable}=" "${environment_file}" | cut -d: -f1)
+    local line_number
+    line_number="$(grep -n "^${environment_variable}=" "${environment_file}" | cut -d: -f1)"
 
     if [ -z "${line_number}" ]; then
         echo -1
         return 0
     fi
 
-    echo ${line_number}
+    echo "${line_number}"
 }
 
 sfg_bash_utils__set_environment_variable() {
     local environment_file=${1}
     local environment_variable=${2}
     local value=${3}
-    local line_number=$(sfg_bash_utils__get_line_number_of_environment_variable "${environment_file}" "${environment_variable}")
+    local line_number
+    line_number="$(sfg_bash_utils__get_line_number_of_environment_variable "${environment_file}" "${environment_variable}")"
 
     if [ "${line_number}" -ne -1 ]; then
         sed -i "${line_number} c\\${environment_variable}=${value}" "${environment_file}"
@@ -41,5 +43,5 @@ sfg_bash_utils__get_environment_variable() {
         return 1
     fi
 
-    echo $(grep -m1 "^${environment_variable}=.*" "${environment_file}" | cut -d= -f2)
+    "$(grep -m1 "^${environment_variable}=.*" "${environment_file}" | cut -d= -f2)"
 }

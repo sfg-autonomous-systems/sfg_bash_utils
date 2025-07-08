@@ -3,7 +3,8 @@
 sfg_bash_utils__configure_ros_domain_id() {
     local environment_file="${1}"
 
-    local SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)
+    local SCRIPT_DIR
+    SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)"
     source "${SCRIPT_DIR}/common"
 
     local START_TEXT="> Configure ROS domain ID."
@@ -11,7 +12,8 @@ sfg_bash_utils__configure_ros_domain_id() {
 
     sfg_bash_utils__print_info "${START_TEXT}"
     local ENVIRONMENT_VARIABLE="ROS_DOMAIN_ID"
-    local value=$(sfg_bash_utils__get_environment_variable "${environment_file}" "${ENVIRONMENT_VARIABLE}")
+    local value
+    value="$(sfg_bash_utils__get_environment_variable "${environment_file}" "${ENVIRONMENT_VARIABLE}")"
 
     if [[ -n "${value}" ]]; then
         local MESSAGE="ROS domain ID '${value}' is already set. Would you like to configure a different domain ID? [y/N] "
@@ -48,5 +50,6 @@ sfg_bash_utils__configure_ros_domain_id() {
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    set -e
     sfg_bash_utils__configure_ros_domain_id "${@}"
 fi
