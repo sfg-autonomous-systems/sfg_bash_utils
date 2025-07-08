@@ -43,5 +43,5 @@ sfg_bash_utils__get_environment_variable() {
         return 1
     fi
 
-    "$(grep -m1 "^${environment_variable}=.*" "${environment_file}" | cut -d= -f2)"
+    echo "$(grep -m1 "^${environment_variable}=.*" "${environment_file}" | cut -d= -f2)"
 }
