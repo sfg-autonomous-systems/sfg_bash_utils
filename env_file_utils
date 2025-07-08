@@ -43,5 +43,6 @@ sfg_bash_utils__get_environment_variable() {
         return 1
     fi
 
+    # shellcheck disable=SC2005
     echo "$(grep -m1 "^${environment_variable}=.*" "${environment_file}" | cut -d= -f2)"
 }
