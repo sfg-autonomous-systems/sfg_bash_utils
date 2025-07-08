@@ -40,7 +40,7 @@ sfg_bash_utils__get_environment_variable() {
 
     if [ ! -f "${environment_file}" ]; then
         echo ""
-        return 1
+        return 0
     fi
 
     # shellcheck disable=SC2005
