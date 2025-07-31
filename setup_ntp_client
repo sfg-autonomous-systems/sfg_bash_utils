@@ -18,7 +18,7 @@ sfg_bash_utils__setup_ntp_client() {
     local MESSAGE="Would you like to configure the NTP client for time synchronization? [y/N] "
     read -rp "${MESSAGE}" confirm
 
-    if [[ ! "${confirm}" == y ]]; then
+    if [[ ! "${confirm}" == "y" ]]; then
         sfg_bash_utils__print_info "${END_TEXT}"
         return 0
     fi

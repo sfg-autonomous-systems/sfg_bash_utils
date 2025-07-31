@@ -23,7 +23,7 @@ sfg_bash_utils__set_up_mounted_directory() {
         local MESSAGE="The directory '${local_selected_directory}' has previously been selected for mounting. Would you like to choose a different directory? [y/N] "
         read -rp "${MESSAGE}" confirm
 
-        if [[ ! "${confirm}" == y ]]; then
+        if [[ ! "${confirm}" == "y" ]]; then
             sfg_bash_utils__set_environment_variable "${environment_file}" "CONTAINER_SELECTED_DIRECTORY_MOUNT_POINT" "${container_workspace_directory}/$(basename "${local_selected_directory}")"
             sfg_bash_utils__print_info "${END_TEXT}"
             return 0
