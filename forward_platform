@@ -6,25 +6,14 @@ sfg_bash_utils__forward_platform() {
     local SCRIPT_DIR
     SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)"
     source "${SCRIPT_DIR}/common"
+    source "${SCRIPT_DIR}/get_platform"
 
     local START_TEXT="> Forwarding platform."
     local END_TEXT="< Done forwarding platform."
 
     sfg_bash_utils__print_info "${START_TEXT}"
-    local platform=""
-
-    case $(uname -m) in
-    "x86_64")
-        platform="amd64"
-        ;;
-    "aarch64" | "arm64")
-        platform="arm64"
-        ;;
-    *)
-        sfg_bash_utils__print_error "Unsupported platform: $(uname -m)" >&2
-        exit 1
-        ;;
-    esac
+    local platform
+    platform="$(sfg_bash_utils__get_platform)"
 
     sfg_bash_utils__print_plain "Detected platform '${platform}'."
     sfg_bash_utils__set_environment_variable "${environment_file}" "PLATFORM" "${platform}"
