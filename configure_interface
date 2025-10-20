@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+sfg_bash_utils__configure_interface() {
+    local connection_type="${1}"
+    local connection_name="${2}"
+    local interface_name="${3}"
+    local args=("${@:4}")
+
+    local SCRIPT_DIR
+    SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)"
+    source "${SCRIPT_DIR}/common"
+
+    local start_text="> Configuring ${interface_name} ${connection_type} interface for connection to ${connection_name}."
+    local end_text="< Done configuring ${interface_name} ${connection_type} interface for connection to ${connection_name}."
+
+    sfg_bash_utils__print_info "${start_text}"
+
+    if ! nmcli connection show "${connection_name}" >"/dev/null" 2>&1; then
+        sudo nmcli connection add \
+            type "${connection_type}" \
+            con-name "${connection_name}" \
+            ifname "${interface_name}" \
+            "${args[@]}"
+        sudo nmcli connection up "${connection_name}"
+    else
+        sfg_bash_utils__print_plain "Connection already exists. Nothing needs to be done."
+    fi
+
+    sfg_bash_utils__print_info "${end_text}"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    set -e
+    sfg_bash_utils__configure_interface "${@}"
+fi
