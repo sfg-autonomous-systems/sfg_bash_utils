@@ -15,27 +15,55 @@ sfg_bash_utils__setup_ntp_client() {
         exit 1
     fi
 
+    local MESSAGE="Would you like to configure the NTP client for time synchronization? [y/N] "
+    read -rp "${MESSAGE}" confirm
+
+    if [[ ! "${confirm}" == "y" ]]; then
+        sfg_bash_utils__print_info "${END_TEXT}"
+        return 0
+    fi
+
+    # Allow the developer to sync to an NTP server of their choice.
+    read -rp "Enter the NTP server to sync with: " ntp_server
+
+    # Check if the user canceled NTP client configuation.
+    if [[ -z "${ntp_server}" ]]; then
+        sfg_bash_utils__print_error "Error: NTP client configuration canceled."
+        exit 1
+    fi
+
+    # Check if the ntpdate command is available.
+    if ! command -v ntpdate &>"/dev/null"; then
+        sfg_bash_utils__print_error "Error: ntpdate command not found. Please install the ntpdate package and try again."
+        exit 1
+    fi
+
+    # Check if the NTP server exists/is reachable.
+    if ! ntpdate -q "${ntp_server}" &>"/dev/null"; then
+        sfg_bash_utils__print_error "Error: NTP server '${ntp_server}' is not reachable or is not a valid NTP server."
+        sfg_bash_utils__print_error "Please check the server address and your network connection, then try again."
+        exit 1
+    else
+        sfg_bash_utils__print_plain "NTP server verified successfully."
+    fi
+
     local changes_made=false
 
     local CONFIG_FILE="/etc/systemd/timesyncd.conf"
-    local NTP_SERVER
-    NTP_SERVER="$(ip route | grep '^default' | awk '{print $3}')"
     local FALLBACK_NTP_SERVER="ntp.ubuntu.com"
     local SED_EXPRESSION=(
         -e '/^NTP=.*/d'
         -e '/^FallbackNTP=.*/d'
-        -e "/^\[Time\]/a NTP=${NTP_SERVER}\nFallbackNTP=${FALLBACK_NTP_SERVER}"
+        -e "/^\[Time\]/a NTP=${ntp_server}\nFallbackNTP=${FALLBACK_NTP_SERVER}"
     )
 
     if ! sed "${SED_EXPRESSION[@]}" "${CONFIG_FILE}" | diff -q - "${CONFIG_FILE}" >"/dev/null"; then
-        sfg_bash_utils__print_plain "NTP server configuration requires changes. Updating..."
         sudo sed -i "${SED_EXPRESSION[@]}" "${CONFIG_FILE}"
         changes_made=true
     fi
 
     if ! timedatectl | grep -q 'NTP service: active'; then
-        sfg_bash_utils__print_plain "NTP service is not active. Enabling..."
-        timedatectl set-ntp true
+        sudo timedatectl set-ntp true
         changes_made=true
     fi
 
