@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 sfg_bash_utils__setup_ntp_client() {
+    local environment_file="${1}"
+
     local SCRIPT_DIR
     SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)"
     source "${SCRIPT_DIR}/common"
@@ -15,10 +17,14 @@ sfg_bash_utils__setup_ntp_client() {
         exit 1
     fi
 
+    local ntp_server
+    ntp_server=$(grep '^NTP=' /etc/systemd/timesyncd.conf | cut -d'=' -f2)
+
     local MESSAGE="Would you like to configure the NTP client for time synchronization? [y/N] "
     read -rp "${MESSAGE}" confirm
 
     if [[ ! "${confirm}" == "y" ]]; then
+        sfg_bash_utils__set_environment_variable "${environment_file}" "NTP_SERVER" "${ntp_server}"
         sfg_bash_utils__print_info "${END_TEXT}"
         return 0
     fi
@@ -50,11 +56,10 @@ sfg_bash_utils__setup_ntp_client() {
     local changes_made=false
 
     local CONFIG_FILE="/etc/systemd/timesyncd.conf"
-    local FALLBACK_NTP_SERVER="ntp.ubuntu.com"
     local SED_EXPRESSION=(
         -e '/^NTP=.*/d'
         -e '/^FallbackNTP=.*/d'
-        -e "/^\[Time\]/a NTP=${ntp_server}\nFallbackNTP=${FALLBACK_NTP_SERVER}"
+        -e "/^\[Time\]/a NTP=${ntp_server}"
     )
 
     if ! sed "${SED_EXPRESSION[@]}" "${CONFIG_FILE}" | diff -q - "${CONFIG_FILE}" >"/dev/null"; then
@@ -74,6 +79,7 @@ sfg_bash_utils__setup_ntp_client() {
         sfg_bash_utils__print_plain "No changes were necessary."
     fi
 
+    sfg_bash_utils__set_environment_variable "${environment_file}" "NTP_SERVER" "${ntp_server}"
     sfg_bash_utils__print_info "${END_TEXT}"
 }
 
