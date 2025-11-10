@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 
-sfg_bash_utils__setup_time_synchronization() {
+sfg_bash_utils__setup_ntp() {
     local environment_file="${1}"
 
     local SCRIPT_DIR
     SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)"
     source "${SCRIPT_DIR}/common"
 
-    local START_TEXT="> Setting up time synchronization."
-    local END_TEXT="< Done setting up time synchronization."
+    local START_TEXT="> Setting up NTP."
+    local END_TEXT="< Done setting up NTP."
 
     sfg_bash_utils__print_info "${START_TEXT}"
     local CONFLICTING_SERVICES=("ntp" "chrony" "systemd-timesyncd")
 
     for SERVICE in "${CONFLICTING_SERVICES[@]}"; do
         if systemctl is-active --quiet "${SERVICE}.service"; then
-            sfg_bash_utils__print_warning "Warning: Conflicting time synchronization service '${SERVICE}' is active."
+            sfg_bash_utils__print_warning "Warning: Conflicting NTP service '${SERVICE}' is active."
             read -rp "Would you like to disable and stop the '${SERVICE}' service? [y/N] " confirm
 
             if [[ "${confirm}" == "y" ]]; then
@@ -23,7 +23,7 @@ sfg_bash_utils__setup_time_synchronization() {
                 sudo systemctl disable "${SERVICE}.service"
                 sfg_bash_utils__print_plain "Service '${SERVICE}' has been stopped and disabled."
             else
-                sfg_bash_utils__print_error "Error: Please disable the '${SERVICE}' service before setting up the NTP client."
+                sfg_bash_utils__print_error "Error: Please disable the '${SERVICE}' service before setting up NTP."
                 exit 1
             fi
         fi
@@ -75,5 +75,5 @@ sfg_bash_utils__setup_time_synchronization() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     set -e
-    sfg_bash_utils__setup_time_synchronization "${@}"
+    sfg_bash_utils__setup_ntp "${@}"
 fi
