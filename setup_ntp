@@ -11,23 +11,11 @@ sfg_bash_utils__setup_ntp() {
     local END_TEXT="< Done setting up NTP."
 
     sfg_bash_utils__print_info "${START_TEXT}"
-    local CONFLICTING_SERVICES=("ntp" "chrony" "systemd-timesyncd")
 
-    for SERVICE in "${CONFLICTING_SERVICES[@]}"; do
-        if systemctl is-active --quiet "${SERVICE}.service"; then
-            sfg_bash_utils__print_warning "Warning: Conflicting NTP service '${SERVICE}' is active."
-            read -rp "Would you like to disable and stop the '${SERVICE}' service? [y/N] " confirm
-
-            if [[ "${confirm}" == "y" ]]; then
-                sudo systemctl stop "${SERVICE}.service"
-                sudo systemctl disable "${SERVICE}.service"
-                sfg_bash_utils__print_plain "Service '${SERVICE}' has been stopped and disabled."
-            else
-                sfg_bash_utils__print_error "Error: Please disable the '${SERVICE}' service before setting up NTP."
-                exit 1
-            fi
-        fi
-    done
+    if ! systemctl is-enabled systemd-timesyncd.service &>"/dev/null"; then
+        sfg_bash_utils__print_error "Error: NTP client setup requires service systemd-timesyncd. You need to install and enable it with 'sudo systemctl enable --now systemd-timesyncd'."
+        exit 1
+    fi
 
     local ENVIRONMENT_VARIABLE="NTP_SERVER"
     local ntp_server
@@ -53,20 +41,42 @@ sfg_bash_utils__setup_ntp() {
     fi
 
     # Check if the ntpdate command is available.
-    if ! command -v ntpdate &>"/dev/null"; then
+    if command -v ntpdate &>"/dev/null"; then
+        if ntpdate -q "${ntp_server}" &>"/dev/null"; then
+            sfg_bash_utils__print_plain "NTP server verified successfully."
+        else
+            sfg_bash_utils__print_error "Error: NTP server '${ntp_server}' is not reachable or is not a valid NTP server."
+            sfg_bash_utils__print_error "Please check the server address and your network connection, then try again."
+            exit 1
+        fi
+    else
         sfg_bash_utils__print_warning "Warning: ntpdate command not found. Skipping NTP server validation."
-        sfg_bash_utils__set_environment_variable "${environment_file}" "NTP_SERVER" "${ntp_server}"
-        sfg_bash_utils__print_info "${END_TEXT}"
-        exit 0
     fi
 
-    # Check if the NTP server exists/is reachable.
-    if ! ntpdate -q "${ntp_server}" &>"/dev/null"; then
-        sfg_bash_utils__print_error "Error: NTP server '${ntp_server}' is not reachable or is not a valid NTP server."
-        sfg_bash_utils__print_error "Please check the server address and your network connection, then try again."
-        exit 1
+    local changes_made=false
+
+    local CONFIG_FILE="/etc/systemd/timesyncd.conf"
+    local SED_EXPRESSION=(
+        -e '/^NTP=.*/d'
+        -e '/^FallbackNTP=.*/d'
+        -e "/^\[Time\]/a NTP=${ntp_server}"
+    )
+
+    if ! sed "${SED_EXPRESSION[@]}" "${CONFIG_FILE}" | diff -q - "${CONFIG_FILE}" >"/dev/null"; then
+        sudo sed -i "${SED_EXPRESSION[@]}" "${CONFIG_FILE}"
+        changes_made=true
+    fi
+
+    if ! timedatectl | grep -q 'NTP service: active'; then
+        sudo timedatectl set-ntp true
+        changes_made=true
+    fi
+
+    if [ "${changes_made}" = true ]; then
+        sfg_bash_utils__print_info "Configuration changed. Restarting systemd-timesyncd service..."
+        sudo systemctl restart systemd-timesyncd
     else
-        sfg_bash_utils__print_plain "NTP server verified successfully."
+        sfg_bash_utils__print_plain "No changes were necessary."
     fi
 
     sfg_bash_utils__set_environment_variable "${environment_file}" "NTP_SERVER" "${ntp_server}"
