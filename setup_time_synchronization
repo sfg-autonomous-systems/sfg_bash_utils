@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+sfg_bash_utils__setup_time_synchronization() {
+    local environment_file="${1}"
+
+    local SCRIPT_DIR
+    SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)"
+    source "${SCRIPT_DIR}/common"
+
+    local START_TEXT="> Setting up time synchronization."
+    local END_TEXT="< Done setting up time synchronization."
+
+    sfg_bash_utils__print_info "${START_TEXT}"
+    local CONFLICTING_SERVICES=("ntp" "chrony" "systemd-timesyncd")
+
+    for SERVICE in "${CONFLICTING_SERVICES[@]}"; do
+        if systemctl is-active --quiet "${SERVICE}.service"; then
+            sfg_bash_utils__print_warning "Warning: Conflicting time synchronization service '${SERVICE}' is active."
+            read -rp "Would you like to disable and stop the '${SERVICE}' service? [y/N] " confirm
+
+            if [[ "${confirm}" == "y" ]]; then
+                sudo systemctl stop "${SERVICE}.service"
+                sudo systemctl disable "${SERVICE}.service"
+                sfg_bash_utils__print_plain "Service '${SERVICE}' has been stopped and disabled."
+            else
+                sfg_bash_utils__print_error "Error: Please disable the '${SERVICE}' service before setting up the NTP client."
+                exit 1
+            fi
+        fi
+    done
+
+    local ENVIRONMENT_VARIABLE="NTP_SERVER"
+    local ntp_server
+    ntp_server="$(sfg_bash_utils__get_environment_variable "${environment_file}" "${ENVIRONMENT_VARIABLE}")"
+
+    if [[ -n "${ntp_server}" ]]; then
+        local MESSAGE="NTP server '${ntp_server}' is already set. Would you like to configure a different NTP server? [y/N] "
+        read -rp "${MESSAGE}" confirm
+
+        if [[ ! "${confirm}" == "y" ]]; then
+            sfg_bash_utils__print_info "${END_TEXT}"
+            return 0
+        fi
+    fi
+
+    # Allow the developer to sync to an NTP server of their choice.
+    read -rp "Enter the NTP server to sync with: " ntp_server
+
+    # Check if the user canceled NTP client configuation.
+    if [[ -z "${ntp_server}" ]]; then
+        sfg_bash_utils__print_error "Error: NTP client configuration canceled."
+        exit 1
+    fi
+
+    # Check if the ntpdate command is available.
+    if ! command -v ntpdate &>"/dev/null"; then
+        sfg_bash_utils__print_warning "Warning: ntpdate command not found. Skipping NTP server validation."
+        sfg_bash_utils__set_environment_variable "${environment_file}" "NTP_SERVER" "${ntp_server}"
+        sfg_bash_utils__print_info "${END_TEXT}"
+        exit 0
+    fi
+
+    # Check if the NTP server exists/is reachable.
+    if ! ntpdate -q "${ntp_server}" &>"/dev/null"; then
+        sfg_bash_utils__print_error "Error: NTP server '${ntp_server}' is not reachable or is not a valid NTP server."
+        sfg_bash_utils__print_error "Please check the server address and your network connection, then try again."
+        exit 1
+    else
+        sfg_bash_utils__print_plain "NTP server verified successfully."
+    fi
+
+    sfg_bash_utils__set_environment_variable "${environment_file}" "NTP_SERVER" "${ntp_server}"
+    sfg_bash_utils__print_info "${END_TEXT}"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    set -e
+    sfg_bash_utils__setup_time_synchronization "${@}"
+fi
