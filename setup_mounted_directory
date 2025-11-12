@@ -8,11 +8,11 @@ sfg_bash_utils__set_up_mounted_directory() {
     SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)"
     source "${SCRIPT_DIR}/common"
 
-    local START_TEXT="> Setting up a directory to be mounted inside the dev container."
-    local END_TEXT="< Done setting up a directory to be mounted inside the dev container."
+    local START_TEXT="> Setting up a directory to be mounted inside the devcontainer."
+    local END_TEXT="< Done setting up a directory to be mounted inside the devcontainer."
 
     sfg_bash_utils__print_info "${START_TEXT}"
-    sfg_bash_utils__print_plain "Set up a directory to be mounted inside the dev container."
+    sfg_bash_utils__print_plain "Set up a directory to be mounted inside the devcontainer."
     sfg_bash_utils__print_warning "Note that if you change the directory to be mounted, you will need to rebuild the container for the changes to take effect."
 
     local ENVIRONMENT_VARIABLE="LOCAL_SELECTED_DIRECTORY"
