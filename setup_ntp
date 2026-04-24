@@ -12,8 +12,14 @@ sfg_bash_utils__setup_ntp() {
 
     sfg_bash_utils__print_info "${START_TEXT}"
 
-    if ! systemctl is-enabled systemd-timesyncd.service &>"/dev/null"; then
-        sfg_bash_utils__print_error "Error: NTP client setup requires service systemd-timesyncd. You need to install and enable it with 'sudo systemctl enable --now systemd-timesyncd'."
+    local ntp_daemon=""
+
+    if systemctl is-enabled systemd-timesyncd.service &>"/dev/null"; then
+        ntp_daemon="systemd-timesyncd"
+    elif systemctl is-enabled chronyd.service &>"/dev/null"; then
+        ntp_daemon="chronyd"
+    else
+        sfg_bash_utils__print_error "Error: NTP client setup requires either systemd-timesyncd or chronyd. Please install and enable one."
         exit 1
     fi
 
@@ -54,16 +60,35 @@ sfg_bash_utils__setup_ntp() {
     fi
 
     local changes_made=false
+    local config_file=""
+    local sed_expression=()
 
-    local CONFIG_FILE="/etc/systemd/timesyncd.conf"
-    local SED_EXPRESSION=(
-        -e '/^NTP=.*/d'
-        -e '/^FallbackNTP=.*/d'
-        -e "/^\[Time\]/a NTP=${ntp_server}"
-    )
+    if [[ "${ntp_daemon}" == "systemd-timesyncd" ]]; then
+        config_file="/etc/systemd/timesyncd.conf"
+        sed_expression=(
+            -e "/^NTP=${ntp_server}/d"
+            -e 's/^NTP=/#NTP=/'
+            -e 's/^FallbackNTP=/#FallbackNTP=/'
+            -e "/^\[Time\]/a NTP=${ntp_server}"
+        )
+    elif [[ "${ntp_daemon}" == "chronyd" ]]; then
+        config_file="/etc/chrony.conf"
 
-    if ! sed "${SED_EXPRESSION[@]}" "${CONFIG_FILE}" | diff -q - "${CONFIG_FILE}" >"/dev/null"; then
-        sudo sed -i "${SED_EXPRESSION[@]}" "${CONFIG_FILE}"
+        if [[ -f "/etc/chrony/chrony.conf" ]]; then
+            config_file="/etc/chrony/chrony.conf"
+        fi
+
+        sed_expression=(
+            -e "/^server ${ntp_server} /d"
+            -e 's/^server /#server /'
+            -e 's/^pool /#pool /'
+            -e 's/^sourcedir /#sourcedir /'
+            -e "\$a server ${ntp_server} iburst"
+        )
+    fi
+
+    if ! sed "${sed_expression[@]}" "${config_file}" | diff -q - "${config_file}" >"/dev/null"; then
+        sudo sed -i "${sed_expression[@]}" "${config_file}"
         changes_made=true
     fi
 
@@ -73,8 +98,8 @@ sfg_bash_utils__setup_ntp() {
     fi
 
     if [ "${changes_made}" = true ]; then
-        sfg_bash_utils__print_info "Configuration changed. Restarting systemd-timesyncd service..."
-        sudo systemctl restart systemd-timesyncd
+        sfg_bash_utils__print_info "Configuration changed. Restarting ${ntp_daemon} service..."
+        sudo systemctl restart "${ntp_daemon}"
     else
         sfg_bash_utils__print_plain "No changes were necessary."
     fi

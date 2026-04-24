@@ -11,6 +11,11 @@ sfg_bash_utils__get_platform() {
         return
     fi
 
+    if [ -f "/sys/devices/virtual/dmi/id/board_vendor" ] && grep -qi "Valve" "/sys/devices/virtual/dmi/id/board_vendor"; then
+        echo "steamdeck"
+        return
+    fi
+
     if command -v rocm-smi &>/dev/null; then
         echo "amd"
         return
