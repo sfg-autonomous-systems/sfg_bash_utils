@@ -62,14 +62,29 @@ sfg_bash_utils__setup_ntp() {
     local changes_made=false
     local config_file=""
     local sed_expression=()
+    
+    local FALLBACK_NTP1="time.cloudflare.com"
+    local FALLBACK_NTP2="time.google.com"
 
     if [[ "${ntp_daemon}" == "systemd-timesyncd" ]]; then
         config_file="/etc/systemd/timesyncd.conf"
+
+        # Check if a [Time] section exists and add if it doesn't.
+        if ! grep -q '^\[Time\]' "${config_file}"; then
+            echo -e "\n[Time]" | sudo tee -a "${config_file}" >"/dev/null"
+            changes_made=true
+        fi
+
         sed_expression=(
+            # Remove any existing nt servers that match the new configuration to prevent duplicates.
             -e "/^NTP=${ntp_server}/d"
-            -e 's/^NTP=/#NTP=/'
-            -e 's/^FallbackNTP=/#FallbackNTP=/'
+            -e "/^FallbackNTP=${FALLBACK_NTP1} ${FALLBACK_NTP2}/d"
+            # Comment out any other ntp servers that haven't been set by this script to prevent conflicts.
+            -e 's/^\(NTP=\)/#\1/'
+            -e 's/^\(FallbackNTP=\)/#\1/'
+            # Add the new NTP server and fallback servers immediately after the [Time] section header.
             -e "/^\[Time\]/a NTP=${ntp_server}"
+            -e "/^\[Time\]/a FallbackNTP=${FALLBACK_NTP1} ${FALLBACK_NTP2}"
         )
     elif [[ "${ntp_daemon}" == "chronyd" ]]; then
         config_file="/etc/chrony.conf"
@@ -79,14 +94,21 @@ sfg_bash_utils__setup_ntp() {
         fi
 
         sed_expression=(
-            -e "/^server ${ntp_server} /d"
-            -e 's/^server /#server /'
-            -e 's/^pool /#pool /'
-            -e 's/^sourcedir /#sourcedir /'
-            -e "\$a server ${ntp_server} iburst"
+            # Remove any existing server lines that match the new configuration to prevent duplicates.
+            -e "/^server[[:space:]]\+${ntp_server}/d"
+            -e "/^server[[:space:]]\+${FALLBACK_NTP1}/d"
+            -e "/^server[[:space:]]\+${FALLBACK_NTP2}/d"
+            # Comment out any other server or pool lines that haven't been set by this script to prevent conflicts.
+            -e 's/^\(server[[:space:]]\)/#\1/'
+            -e 's/^\(pool[[:space:]]\)/#\1/'
+            # Add the new NTP server and fallback servers at the end of the file.
+            -e "\$a server ${ntp_server} iburst prefer"
+            -e "\$a server ${FALLBACK_NTP1} iburst"
+            -e "\$a server ${FALLBACK_NTP2} iburst"
         )
     fi
-
+    
+    # Only apply the configuration changes if they differ from the current configuration.
     if ! sed "${sed_expression[@]}" "${config_file}" | diff -q - "${config_file}" >"/dev/null"; then
         sudo sed -i "${sed_expression[@]}" "${config_file}"
         changes_made=true
