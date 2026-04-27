@@ -12,7 +12,20 @@ sfg_bash_utils__setup_ntp() {
 
     sfg_bash_utils__print_info "${START_TEXT}"
 
-    local ntp_daemon=""
+    local ntp_daemon
+    local ntp_server
+    ntp_server="$(sfg_bash_utils__get_environment_variable "${environment_file}" "NTP_SERVER")"
+
+    if [[ ! -t 0 ]]; then
+        if [[ -z "${ntp_server}" ]]; then
+            sfg_bash_utils__print_error "Error: No NTP server set and no terminal available for input."
+            exit 1
+        fi
+
+        sfg_bash_utils__print_plain "Using existing NTP server '${ntp_server}'."
+        sfg_bash_utils__print_info "${END_TEXT}"
+        return 0
+    fi
 
     if systemctl is-enabled systemd-timesyncd.service &>"/dev/null"; then
         ntp_daemon="systemd-timesyncd"
@@ -22,10 +35,6 @@ sfg_bash_utils__setup_ntp() {
         sfg_bash_utils__print_error "Error: NTP client setup requires either systemd-timesyncd or chronyd. Please install and enable one."
         exit 1
     fi
-
-    local ENVIRONMENT_VARIABLE="NTP_SERVER"
-    local ntp_server
-    ntp_server="$(sfg_bash_utils__get_environment_variable "${environment_file}" "${ENVIRONMENT_VARIABLE}")"
 
     if [[ -n "${ntp_server}" ]]; then
         local MESSAGE="NTP server '${ntp_server}' is already set. Would you like to configure a different NTP server? [y/N] "
@@ -62,7 +71,7 @@ sfg_bash_utils__setup_ntp() {
     local changes_made=false
     local config_file=""
     local sed_expression=()
-    
+
     local FALLBACK_NTP1="time.cloudflare.com"
     local FALLBACK_NTP2="time.google.com"
 
@@ -107,7 +116,7 @@ sfg_bash_utils__setup_ntp() {
             -e "\$a server ${FALLBACK_NTP2} iburst"
         )
     fi
-    
+
     # Only apply the configuration changes if they differ from the current configuration.
     if ! sed "${sed_expression[@]}" "${config_file}" | diff -q - "${config_file}" >"/dev/null"; then
         sudo sed -i "${sed_expression[@]}" "${config_file}"

@@ -11,9 +11,19 @@ sfg_bash_utils__configure_ros_domain_id() {
     local END_TEXT="< Done configuring ROS domain ID."
 
     sfg_bash_utils__print_info "${START_TEXT}"
-    local ENVIRONMENT_VARIABLE="ROS_DOMAIN_ID"
     local ros_domain_id
-    ros_domain_id="$(sfg_bash_utils__get_environment_variable "${environment_file}" "${ENVIRONMENT_VARIABLE}")"
+    ros_domain_id="$(sfg_bash_utils__get_environment_variable "${environment_file}" "ROS_DOMAIN_ID")"
+
+    if [[ ! -t 0 ]]; then
+        if [[ -z "${ros_domain_id}" ]]; then
+            sfg_bash_utils__print_error "Error: No ROS domain ID set and no terminal available for input."
+            exit 1
+        fi
+
+        sfg_bash_utils__print_plain "Using existing ROS domain ID '${ros_domain_id}'."
+        sfg_bash_utils__print_info "${END_TEXT}"
+        return 0
+    fi
 
     if [[ -n "${ros_domain_id}" ]]; then
         local MESSAGE="ROS domain ID '${ros_domain_id}' is already set. Would you like to configure a different domain ID? [y/N] "
@@ -45,7 +55,7 @@ sfg_bash_utils__configure_ros_domain_id() {
     fi
 
     # Save the chosen ROS domain ID.
-    sfg_bash_utils__set_environment_variable "${environment_file}" "${ENVIRONMENT_VARIABLE}" "${ros_domain_id}"
+    sfg_bash_utils__set_environment_variable "${environment_file}" "ROS_DOMAIN_ID" "${ros_domain_id}"
     sfg_bash_utils__print_info "${END_TEXT}"
 }
 

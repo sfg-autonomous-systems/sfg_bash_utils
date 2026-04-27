@@ -12,12 +12,24 @@ sfg_bash_utils__set_up_mounted_directory() {
     local END_TEXT="< Done setting up a directory to be mounted inside the devcontainer."
 
     sfg_bash_utils__print_info "${START_TEXT}"
+
+    local local_selected_directory
+    local_selected_directory="$(sfg_bash_utils__get_environment_variable "${environment_file}" "LOCAL_SELECTED_DIRECTORY")"
+
+    if [[ ! -t 0 ]]; then
+        if [[ -z "${local_selected_directory}" || ! -d "${local_selected_directory}" ]]; then
+            sfg_bash_utils__print_error "Error: No terminal available for input and no valid previously selected directory to mount."
+            exit 1
+        fi
+
+        sfg_bash_utils__print_plain "Using existing selected directory '${local_selected_directory}' for mounting."
+        sfg_bash_utils__set_environment_variable "${environment_file}" "CONTAINER_SELECTED_DIRECTORY_MOUNT_POINT" "${container_workspace_directory}/$(basename "${local_selected_directory}")"
+        sfg_bash_utils__print_info "${END_TEXT}"
+        return 0
+    fi
+
     sfg_bash_utils__print_plain "Set up a directory to be mounted inside the devcontainer."
     sfg_bash_utils__print_warning "Note that if you change the directory to be mounted, you will need to rebuild the container for the changes to take effect."
-
-    local ENVIRONMENT_VARIABLE="LOCAL_SELECTED_DIRECTORY"
-    local local_selected_directory
-    local_selected_directory="$(sfg_bash_utils__get_environment_variable "${environment_file}" "${ENVIRONMENT_VARIABLE}")"
 
     if [[ -n "${local_selected_directory}" && -d "${local_selected_directory}" ]]; then
         local MESSAGE="The directory '${local_selected_directory}' has previously been selected for mounting. Would you like to choose a different directory? [y/N] "
@@ -47,7 +59,7 @@ sfg_bash_utils__set_up_mounted_directory() {
 
     # Save the selected directory in an environment variable. This will later be leveraged
     # by docker compose to mount the specified directory inside the container.
-    sfg_bash_utils__set_environment_variable "${environment_file}" "${ENVIRONMENT_VARIABLE}" "${local_selected_directory}"
+    sfg_bash_utils__set_environment_variable "${environment_file}" "LOCAL_SELECTED_DIRECTORY" "${local_selected_directory}"
     sfg_bash_utils__set_environment_variable "${environment_file}" "CONTAINER_SELECTED_DIRECTORY_MOUNT_POINT" "${container_workspace_directory}/$(basename "${local_selected_directory}")"
     sfg_bash_utils__print_info "${END_TEXT}"
 }
