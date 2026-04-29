@@ -4,7 +4,7 @@ sfg_bash_utils__print_color() {
     local color_code="${1}"
     local message="${2}"
 
-    if [[ -v TERM ]]; then
+    if [[ -t 2 && -n "${TERM:-}" && "${TERM}" != "dumb" ]]; then
         tput bold >&2
         tput setaf "${color_code}" >&2
         sfg_bash_utils__print_plain "${message}"
