@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-sfg_bash_utils__setup_ntp() {
+sfg_bash_utils__set_up_ntp() {
     local environment_file="${1}"
 
     local SCRIPT_DIR
@@ -141,5 +141,5 @@ sfg_bash_utils__setup_ntp() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     set -e
-    sfg_bash_utils__setup_ntp "${@}"
+    sfg_bash_utils__set_up_ntp "${@}"
 fi
