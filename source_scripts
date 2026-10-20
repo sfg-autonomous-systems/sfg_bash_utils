@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+sfg_bash_utils__source_scripts() {
+    local directory="${1}"
+    local file
+
+    # Source all scripts.
+    for file in "${directory}"/*; do
+        if [[ ! -f "${file}" ]]; then
+            continue
+        fi
+
+        # Skip the file defining this function.
+        if [[ "${BASH_SOURCE[0]}" -ef "${file}" ]]; then
+            continue
+        fi
+
+        # Skip the script that called this function.
+        if [[ "${BASH_SOURCE[1]:-}" -ef "${file}" ]]; then
+            continue
+        fi
+
+        # Only source files that have a sh or bash shebang.
+        if ! head -n 1 "${file}" | grep -qE '^#!.*[/ ](ba)?sh( |$)'; then
+            continue
+        fi
+
+        # shellcheck disable=SC1090
+        source "${file}"
+    done
+}
