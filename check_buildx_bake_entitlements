@@ -4,6 +4,7 @@ sfg_bash_utils__check_buildx_bake_entitlements() {
     local SCRIPT_DIR
     SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)"
     source "${SCRIPT_DIR}/common"
+    source "${SCRIPT_DIR}/get_login_profile"
 
     local START_TEXT="> Checking buildx bake entitlements."
     local END_TEXT="< Done checking buildx bake entitlements."
@@ -46,11 +47,12 @@ sfg_bash_utils__check_buildx_bake_entitlements() {
 
     sfg_bash_utils__print_warning "Buildx version '${buildx_version}' enforces filesystem entitlements, which breaks dev container builds unless 'BUILDX_BAKE_ENTITLEMENTS_FS=0' is set."
 
-    local PROFILE="${HOME}/.profile"
+    local profile
+    profile="$(sfg_bash_utils__get_login_profile)"
     local EXPORT_LINE="export BUILDX_BAKE_ENTITLEMENTS_FS=0"
 
-    if ! grep -qxF "${EXPORT_LINE}" "${PROFILE}" 2>"/dev/null"; then
-        local MESSAGE="Do you want to add '${EXPORT_LINE}' to '${PROFILE}'? [y/N] "
+    if ! grep -qxF "${EXPORT_LINE}" "${profile}" 2>"/dev/null"; then
+        local MESSAGE="Do you want to add '${EXPORT_LINE}' to '${profile}'? [y/N] "
         read -rp "${MESSAGE}" confirm
 
         if [[ ! "${confirm}" =~ ^[Yy]$ ]]; then
@@ -58,10 +60,10 @@ sfg_bash_utils__check_buildx_bake_entitlements() {
             exit 1
         fi
 
-        echo "${EXPORT_LINE}" >>"${PROFILE}"
+        echo "${EXPORT_LINE}" >>"${profile}"
     fi
 
-    sfg_bash_utils__print_error "Error: '${EXPORT_LINE}' is in '${PROFILE}' but not yet active for VS Code."
+    sfg_bash_utils__print_error "Error: '${EXPORT_LINE}' is in '${profile}' but not yet active for VS Code."
     sfg_bash_utils__print_error "Restart VS Code from a fresh session and try again."
     exit 1
 }

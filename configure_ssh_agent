@@ -4,6 +4,7 @@ sfg_bash_utils__configure_ssh_agent() {
     local SCRIPT_DIR
     SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>"/dev/null" && pwd)"
     source "${SCRIPT_DIR}/common"
+    source "${SCRIPT_DIR}/get_login_profile"
 
     local START_TEXT="> Configuring SSH agent."
     local END_TEXT="< Done configuring SSH agent."
@@ -32,11 +33,12 @@ sfg_bash_utils__configure_ssh_agent() {
         return 0
     fi
 
-    local PROFILE="${HOME}/.profile"
+    local profile
+    profile="$(sfg_bash_utils__get_login_profile)"
     local MARKER="# Start SSH agent for forwarding into dev containers."
 
-    if ! grep -qxF "${MARKER}" "${PROFILE}" 2>"/dev/null"; then
-        local MESSAGE="No SSH agent detected. Do you want to auto start one on login via '${PROFILE}'? [y/N] "
+    if ! grep -qxF "${MARKER}" "${profile}" 2>"/dev/null"; then
+        local MESSAGE="No SSH agent detected. Do you want to auto start one on login via '${profile}'? [y/N] "
 
         read -rp "${MESSAGE}" confirm
 
@@ -45,8 +47,8 @@ sfg_bash_utils__configure_ssh_agent() {
             return 0
         fi
 
-        printf '\n%s\n' "${MARKER}" >>"${PROFILE}"
-        cat <<"EOF" >>"${PROFILE}"
+        printf '\n%s\n' "${MARKER}" >>"${profile}"
+        cat <<"EOF" >>"${profile}"
 # The line above marks this block as added by https://github.com/sfg-autonomous-systems/sfg_bash_utils/,
 # do not modify it. The rest may be adjusted.
 # See https://code.visualstudio.com/remote/advancedcontainers/sharing-git-credentials#_using-a-ssh-agent.
@@ -65,7 +67,7 @@ fi
 EOF
     fi
 
-    sfg_bash_utils__print_warning "The SSH agent is configured in '${PROFILE}' but not yet active for VS Code. Restart VS Code from a fresh session to use git over SSH inside the container."
+    sfg_bash_utils__print_warning "The SSH agent is configured in '${profile}' but not yet active for VS Code. Restart VS Code from a fresh session to use git over SSH inside the container."
     sfg_bash_utils__print_warning "Keys protected by a passphrase have to be added manually with 'ssh-add'."
     sfg_bash_utils__print_info "${END_TEXT}"
 }

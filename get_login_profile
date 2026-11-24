@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# Returns the login profile bash actually reads for the current user. 
+# Bash only reads the first existing one in the order of precedence.
+sfg_bash_utils__get_login_profile() {
+    local candidate
+
+    for candidate in "${HOME}/.bash_profile" "${HOME}/.bash_login" "${HOME}/.profile"; do
+        if [[ -f "${candidate}" ]]; then
+            echo "${candidate}"
+            return 0
+        fi
+    done
+
+    echo "${HOME}/.profile"
+}
